@@ -1,39 +1,58 @@
-Markdown
 # AppCleaner.sh
 
-A lightweight, robust, and safe shell script to completely uninstall macOS applications and sweep away their leftover configuration files, caches, and logs. It is fully compatible with the native macOS Bash 3.2 shell and handles strict Bash runtime options (`set -euo pipefail`).
+A lightweight, robust, and safe shell script for completely uninstalling macOS applications and removing leftover configuration files, caches, logs, and related system data.
+
+Designed for compatibility with the native macOS Bash 3.2 environment and strict runtime settings (`set -euo pipefail`).
+
+---
 
 ## Features
 
-- **Robust App Detection:** Leverages macOS Spotlight (`mdfind`) for instant tracking, falling back to deep directory scans if Spotlight indexing is disabled.
-- **Smart Matching:** Searches for leftovers using the original app name, a space-stripped variant (e.g., matching both `Mullvad Browser` and `MullvadBrowser`), and the app's unique `CFBundleIdentifier` bundle ID.
-- **Dry-Run Guard:** Preview exactly what files will be targeted before touching anything on disk.
-- **Safe Traversal:** Uses native `find -print0` parsing to cleanly handle arbitrary spaces, trailing newlines, or unusual characters in file paths.
-- **Safe Trashing:** Moves targeted files safely to the user's native Trash (`~/.Trash/`) instead of executing an irreversible `rm -rf`.
+- **Robust app detection**  
+  Uses macOS Spotlight (`mdfind`) for fast discovery, with fallback to deep filesystem scanning if Spotlight indexing is unavailable.
+
+- **Smart matching system**  
+  Finds leftovers using:
+  - Original application name
+  - Space-stripped variant (e.g., `Mullvad Browser` → `MullvadBrowser`)
+  - App bundle identifier (`CFBundleIdentifier`)
+
+- **Dry-run mode**  
+  Preview all files that would be affected without modifying the system.
+
+- **Safe file traversal**  
+  Uses `find -print0` to correctly handle spaces, newlines, and special characters in file paths.
+
+- **Safe deletion approach**  
+  Moves files to the user Trash (`~/.Trash/`) instead of permanently deleting them with `rm -rf`.
 
 ---
 
 ## Installation
 
-1. Copy the script content into a file named `AppCleaner.sh`.
-2. Make the script executable:
-   ```bash
-   chmod +x AppCleaner.sh
+1. Copy the script into a file named `AppCleaner.sh`
+
+2. Make it executable:
+```bash
+chmod +x AppCleaner.sh
+
 Usage
-Bash
 ./AppCleaner.sh -p "Application Name" [--dry-run]
 Options
 -p "Application Name"
-The target application name you want to search for. Wrap the name in quotes if it contains spaces. The script automatically checks for space-separated and space-collapsed variants.
---dry-run
-(Optional) Simulates the process. Scans the file system and calculates the total footprint, but prints what would happen instead of moving items to the Trash.
+Specifies the target application to uninstall.
+Use quotes if the name contains spaces
+The script automatically tries multiple name variations
+--dry-run (optional)
+Simulates the uninstall process without making changes:
+Scans filesystem
+Lists detected files
+Calculates total size
+Prompts for confirmation without moving anything
 Examples
-1. Simulating a Deletion (Safe Mode)
-To see every log, cache, and application support directory associated with "Mullvad Browser" without deleting anything:
-Bash
+Dry Run (Safe Mode)
 ./AppCleaner.sh -p "Mullvad Browser" --dry-run
-Example Output:
-Plaintext
+Example output:
 Searching for application: Mullvad Browser
 Found application:
   /Applications/Mullvad Browser.app
@@ -44,30 +63,39 @@ Scanning filesystem...
 Items found: 5
 =========================================
 
-114M       /Applications/Mullvad Browser.app
-12K        /Users/username/Library/Application Support/Mullvad Browser
-4.0K       /Users/username/Library/Preferences/net.mullvad.browser.plist
-512K       /Users/username/Library/Caches/MullvadBrowser
-8.0K       /Users/username/Library/Logs/Mullvad Browser
+114M  /Applications/Mullvad Browser.app
+12K   /Users/username/Library/Application Support/Mullvad Browser
+4.0K  /Users/username/Library/Preferences/net.mullvad.browser.plist
+512K  /Users/username/Library/Caches/MullvadBrowser
+8.0K  /Users/username/Library/Logs/Mullvad Browser
 
 Approximate total size: 114.53 MB
 
 Proceed with deletion? [y/N]
-2. Performing an Uninstall
-To find and move all components to the Trash:
-Bash
+Full Uninstall
 ./AppCleaner.sh -p "Mullvad Browser"
-After confirming y at the prompt, all items will be securely relocated to your Trash bin.
+After confirmation (y), all detected files are safely moved to the Trash.
 Targeted Scan Locations
-The script safely checks both User (~/Library) and System (/Library) frameworks across 3 levels of directory depth for the following scopes:
-Application Support directories
-Cache stores
-Application Preferences (.plist files)
-Log outputs
-App Sandboxes (Containers)
-Saved Application States
-WebKit data & HTTP Storages
-Launch Agents and Daemons
-Safety Controls
-Trash Integration: Unlike destructive uninstall tools that run rm -rf, this script uses mv to redirect items to your ~/.Trash. If you make a mistake, open your Trash can and pull the file back out.
-Confirmation Prompt: The script will explicitly ask you to confirm (y/N) before running any moves, ensuring you can review the file manifest first.
+The script searches both user and system-level locations:
+/Applications
+~/Applications
+~/Library/Application Support
+~/Library/Caches
+~/Library/Preferences
+~/Library/Logs
+~/Library/Containers
+~/Library/Saved Application State
+/Library/Application Support
+/Library/LaunchAgents
+/Library/LaunchDaemons
+WebKit and HTTP storage directories
+Safety Features
+Trash-based removal
+Instead of permanent deletion, files are moved to:
+~/.Trash/
+This allows easy recovery if something is removed accidentally.
+Confirmation prompt
+Before any destructive action:
+Full list of targets is displayed
+Total disk usage is calculated
+User must explicitly confirm with y
