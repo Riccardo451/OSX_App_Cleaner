@@ -196,13 +196,20 @@ BEGIN {
 # ----------------------------
 # CONFIRMATION
 # ----------------------------
-echo
-read -r -p "Proceed with deletion? [y/N] " CONFIRM
+# Only ask for confirmation if we are NOT doing a dry run
+if [ "$DRY_RUN" = false ]; then
+    echo
+    read -r -p "Proceed with deletion? [y/N] " CONFIRM
 
-case "$CONFIRM" in
-    y|Y|yes|YES) ;;
-    *) echo "Cancelled."; exit 0 ;;
-esac
+    case "$CONFIRM" in
+        y|Y|yes|YES) ;;
+        *) echo "Cancelled."; exit 0 ;;
+    esac
+else
+    echo
+    echo "--- DRY RUN MODE ACTIVE ---"
+    echo "Simulating actions below without modifying files:"
+fi
 
 # ----------------------------
 # DELETE
