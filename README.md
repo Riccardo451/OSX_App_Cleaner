@@ -35,23 +35,29 @@ Designed for compatibility with the native macOS Bash 3.2 environment and strict
 2. Make it executable:
 ```bash
 chmod +x AppCleaner.sh
-
+```
 Usage
+```bash
 ./AppCleaner.sh -p "Application Name" [--dry-run]
+```
 Options
--p "Application Name"
+-p "Application Name" 
 Specifies the target application to uninstall.
 Use quotes if the name contains spaces
 The script automatically tries multiple name variations
+
 --dry-run (optional)
 Simulates the uninstall process without making changes:
 Scans filesystem
 Lists detected files
 Calculates total size
 Prompts for confirmation without moving anything
+
 Examples
+
 Dry Run (Safe Mode)
 ./AppCleaner.sh -p "Mullvad Browser" --dry-run
+
 Example output:
 Searching for application: Mullvad Browser
 Found application:
@@ -72,11 +78,14 @@ Items found: 5
 Approximate total size: 114.53 MB
 
 Proceed with deletion? [y/N]
+
 Full Uninstall
 ./AppCleaner.sh -p "Mullvad Browser"
 After confirmation (y), all detected files are safely moved to the Trash.
+
 Targeted Scan Locations
 The script searches both user and system-level locations:
+```bash
 /Applications
 ~/Applications
 ~/Library/Application Support
@@ -88,6 +97,8 @@ The script searches both user and system-level locations:
 /Library/Application Support
 /Library/LaunchAgents
 /Library/LaunchDaemons
+```
+
 WebKit and HTTP storage directories
 Safety Features
 Trash-based removal
