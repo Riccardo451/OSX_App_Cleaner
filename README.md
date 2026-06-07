@@ -30,16 +30,22 @@ Engineered specifically for full compatibility with native macOS environment con
 
 ```bash
 chmod +x AppCleaner.sh
+```
 🛠️ Usage & Options
-Bash
+```bash
 ./AppCleaner.sh -p "Application Name" [--dry-run]
+```
+
 Command Flags
 Flag	Argument	Description
+
 -p	"Application Name"	Required. Specifies the target application. Wrap in quotes if the name contains spaces. The engine will automatically evaluate multiple name variations.
+
 --dry-run	None	Optional. Simulates the removal. It scans the filesystem, calculates the disk footprint, and stops at the prompt without moving any files.
+
 📖 Examples
 1. Previewing Leftovers (Dry-Run Mode)
-Bash
+```bash
 ./AppCleaner.sh -p "Mullvad Browser" --dry-run
 Console Output:
 Plaintext
@@ -61,13 +67,17 @@ Items found: 5
 
 Approximate total size: 114.53 MB
 
-Proceed with deletion? [y/N] 
+Proceed with deletion? [y/N]
+```
+
 2. Performing a Complete Uninstall
-Bash
+```bash
 ./AppCleaner.sh -p "Mullvad Browser"
+```
 💡 Note: After reviewing the detected assets, type y or yes at the prompt. All tracked resources will be immediately moved to your Trash.
 📂 Target Scan Locations
 The engine performs targeted, depth-limited sweeps across both User-level (~/) and System-level (/) asset frameworks:
+```
 /Applications & ~/Applications (.app bundles)
 ~/Library/Application Support & /Library/Application Support
 ~/Library/Caches & /Library/Preferences
@@ -78,6 +88,8 @@ The engine performs targeted, depth-limited sweeps across both User-level (~/) a
 ~/Library/Group Containers
 /Library/LaunchAgents & /Library/LaunchDaemons
 /Library/PrivilegedHelperTools
+```
+
 🔒 Safety Controls
 Reversible Trashing: Because files are relocated to ~/.Trash/ via mv, any accidental flags can be instantly restored using the native macOS "Put Back" feature in the Trash bin.
 Explicit Confirmation Guardrails: Destructive execution paths are entirely blocked until the script prints the exact file manifest, totals the collective disk space usage, and receives an explicit y/yes confirmation from the user.
