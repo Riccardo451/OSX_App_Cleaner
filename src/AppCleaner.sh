@@ -22,7 +22,6 @@ delete_item() {
         echo "[DRY RUN] Would move to Trash: $target"
     else
         echo "Moving to Trash: $target"
-        # Ensure the Trash directory exists before moving
         mkdir -p "$HOME/.Trash"
         mv "$target" "$HOME/.Trash/"
     fi
@@ -49,8 +48,8 @@ done
 
 [ -z "$APP_NAME" ] && usage
 
-APP_NAME_LOWER=$(printf '%s' "$APP_NAME" | tr '[:upper:]' '[:lower:]')
-# New: Strip all spaces for alternative matching
+# Fallback case manipulation compatible with Bash 3.2 (macOS default)
+APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
 APP_NAME_NO_SPACE="${APP_NAME_LOWER// /}"
 
 echo "Searching for application: $APP_NAME"
@@ -61,20 +60,21 @@ echo "Searching for application: $APP_NAME"
 APP_PATH=""
 
 # 1. Spotlight (best source)
-# Using a mapfile or reading directly avoids subshell assignment issues
 APP_PATH=$(mdfind "kMDItemKind == 'Application'" 2>/dev/null | grep -i "$APP_NAME" | head -n 1 || true)
 
 # 2. Applications folders fallback
 if [ -z "$APP_PATH" ]; then
-    # Enhanced to look for both "Mullvad Browser" and "MullvadBrowser"
     APP_PATH=$(find /Applications "$HOME/Applications" -type d -name "*.app" 2>/dev/null | grep -i -E "$APP_NAME|${APP_NAME// /}" | head -n 1 || true)
 fi
 
 BUNDLE_ID=""
 
 if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
+    # Calculate the size of the .app bundle specifically
+    APP_SIZE=$(du -sh "$APP_PATH" 2>/dev/null | awk '{print $1}')
+    
     echo "Found application:"
-    echo "  $APP_PATH"
+    echo "  $APP_PATH ($APP_SIZE)"
 
     BUNDLE_ID=$(
         /usr/libexec/PlistBuddy \
@@ -115,51 +115,36 @@ echo
 echo "Scanning filesystem..."
 
 # ----------------------------
-# SAFE SCAN (macOS Bash 3.2 compatible)
+# FAST SCAN (Offloads filtering to `find`)
 # ----------------------------
-for location in "${SEARCH_LOCATIONS[@]}"; do
+# Construct regex for find: (name|nospace|bundle_id)
+FIND_REGEX=".*(${APP_NAME_LOWER}|${APP_NAME_NO_SPACE}"
+if [ -n "$BUNDLE_ID" ]; then
+    BUNDLE_ID_LOWER=$(echo "$BUNDLE_ID" | tr '[:upper:]' '[:lower:]')
+    FIND_REGEX="${FIND_REGEX}|${BUNDLE_ID_LOWER}"
+fi
+FIND_REGEX="${FIND_REGEX}).*"
 
+for location in "${SEARCH_LOCATIONS[@]}"; do
     [ -d "$location" ] || continue
 
+    # -iregex performs case-insensitive regex matching on the entire path directly inside find.
+    # This prevents Bash from looping over thousands of irrelevant files.
     while IFS= read -r -d '' item; do
-
-            name=$(basename "$item")
-            name_lower=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
-
-            # Check for original name OR space-stripped name
-            if [[ "$name_lower" == *"$APP_NAME_LOWER"* ]] || [[ "$name_lower" == *"$APP_NAME_NO_SPACE"* ]]; then
-                MATCHES+=("$item")
-            fi
-
-            if [ -n "$BUNDLE_ID" ]; then
-                bundle_lower=$(printf '%s' "$BUNDLE_ID" | tr '[:upper:]' '[:lower:]')
-                if [[ "$name_lower" == *"$bundle_lower"* ]]; then
-                    MATCHES+=("$item")
-                fi
-            fi
-
-        done < <(find "$location" -maxdepth 3 -print0 2>/dev/null)
-
+        MATCHES+=("$item")
+    done < <(find -E "$location" -maxdepth 3 -iregex "$FIND_REGEX" -print0 2>/dev/null)
 done
 
 # ----------------------------
-# DEDUP
+# DEDUP (Optimized via Awk)
 # ----------------------------
 UNIQUE_MATCHES=()
-
-for item in "${MATCHES[@]}"; do
-    skip=false
-
-    # Fix: Safely expand the array even if it's currently empty
-    for existing in ${UNIQUE_MATCHES[@]+"${UNIQUE_MATCHES[@]}"}; do
-        if [ "$existing" = "$item" ]; then
-            skip=true
-            break
-        fi
-    done
-
-    $skip || UNIQUE_MATCHES+=("$item")
-done
+if [ ${#MATCHES[@]} -gt 0 ]; then
+    # Using awk to deduplicate is drastically faster than nested bash loops
+    while IFS= read -r line; do
+        UNIQUE_MATCHES+=("$line")
+    done < <(printf '%s\n' "${MATCHES[@]}" | awk '!x[$0]++')
+fi
 
 # ----------------------------
 # EXIT IF NOTHING
@@ -171,7 +156,7 @@ if [ ${#UNIQUE_MATCHES[@]} -eq 0 ]; then
 fi
 
 # ----------------------------
-# SUMMARY
+# SUMMARY (Fixed for spaces)
 # ----------------------------
 echo
 echo "========================================="
@@ -182,14 +167,16 @@ echo
 TOTAL_KB=0
 
 for item in "${UNIQUE_MATCHES[@]}"; do
-    # Check if file still exists (to avoid du throwing errors under set -e)
+    # Check if file still exists (to avoid du throwing errors)
     [ -e "$item" ] || continue
 
-    size_kb=$(du -sk "$item" 2>/dev/null | awk '{print $1}' || echo 0)
-    human_size=$(du -sh "$item" 2>/dev/null | awk '{print $1}' || echo "0B")
+    # Safely get human-readable size and raw KB size without breaking on spaces
+    human_size=$(du -sh "$item" 2>/dev/null | awk '{print $1}')
+    size_kb=$(du -sk "$item" 2>/dev/null | awk '{print $1}')
 
-    # Handle cases where size_kb is empty
     [ -z "$size_kb" ] && size_kb=0
+    [ -z "$human_size" ] && human_size="0B"
+    
     TOTAL_KB=$((TOTAL_KB + size_kb))
 
     printf "%-10s %s\n" "$human_size" "$item"
@@ -210,7 +197,6 @@ BEGIN {
 # CONFIRMATION
 # ----------------------------
 echo
-# -r ensures backslashes aren't mangled in input
 read -r -p "Proceed with deletion? [y/N] " CONFIRM
 
 case "$CONFIRM" in
