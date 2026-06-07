@@ -1,65 +1,48 @@
-# AppCleaner.sh
+# 🧹 AppCleaner.sh
 
-A lightweight, robust, and safe shell script for completely uninstalling macOS applications and removing leftover configuration files, caches, logs, and related system data.
+[![Platform: macOS](https://img.shields.io/badge/platform-macOS-apple.svg)](https://www.apple.com/macos/)
+[![Shell: Bash 3.2+](https://img.shields.io/badge/shell-Bash%203.2%2B-blue.svg)](https://www.gnu.org/software/bash/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-Designed for compatibility with the native macOS Bash 3.2 environment and strict runtime settings (`set -euo pipefail`).
+A lightweight, robust, and safe shell script designed to completely uninstall macOS applications. It systematically sweeps away leftover configuration files, caches, logs, and related system data that standard drag-and-drop uninstalls leave behind.
 
----
-
-## Features
-
-- **Robust app detection**  
-  Uses macOS Spotlight (`mdfind`) for fast discovery, with fallback to deep filesystem scanning if Spotlight indexing is unavailable.
-
-- **Smart matching system**  
-  Finds leftovers using:
-  - Original application name
-  - Space-stripped variant (e.g., `Mullvad Browser` → `MullvadBrowser`)
-  - App bundle identifier (`CFBundleIdentifier`)
-
-- **Dry-run mode**  
-  Preview all files that would be affected without modifying the system.
-
-- **Safe file traversal**  
-  Uses `find -print0` to correctly handle spaces, newlines, and special characters in file paths.
-
-- **Safe deletion approach**  
-  Moves files to the user Trash (`~/.Trash/`) instead of permanently deleting them with `rm -rf`.
+Engineered specifically for full compatibility with native macOS environment constraints (including legacy **Bash 3.2**) while adhering to strict runtime safety configurations (`set -euo pipefail`).
 
 ---
 
-## Installation
+## ✨ Features
 
-1. Copy the script into a file named `AppCleaner.sh`
+* 🔍 **Dual-Layer App Detection** Leverages native macOS Spotlight (`mdfind`) for instantaneous discovery, automatically falling back to deep filesystem directory scanning if Spotlight indexing is disabled.
+* 🧠 **Smart Matching Engine** Maximizes cleanup coverage by cross-referencing files using three independent vectors:
+    * The original application name.
+    * A space-stripped variant (e.g., matching both `Mullvad Browser` and `MullvadBrowser`).
+    * The app's unique Bundle Identifier (`CFBundleIdentifier`) extracted directly from its `Info.plist`.
+* 🛡️ **Dry-Run Mode** Preview the absolute path and storage impact of all targeted items safely without making a single modification to the system.
+* 💾 **Safe File Traversal** Implements strict null-delimited processing (`find -print0`) to flawlessly handle paths containing spaces, trailing newlines, or unusual characters.
+* 🗑️ **Trash-First Philosophy** Zero risk of catastrophic accidental loss. Files are safely relocated to the native user Trash (`~/.Trash/`) instead of being permanently erased with destructive `rm -rf` commands.
 
-2. Make it executable:
+---
+
+## 🚀 Installation & Setup
+
+1. Save the script contents into a file named `AppCleaner.sh`.
+2. Open your terminal and grant execution permissions:
+
 ```bash
 chmod +x AppCleaner.sh
-```
-Usage
-```bash
+🛠️ Usage & Options
+Bash
 ./AppCleaner.sh -p "Application Name" [--dry-run]
-```
-Options
--p "Application Name" 
-Specifies the target application to uninstall.
-Use quotes if the name contains spaces
-The script automatically tries multiple name variations
-
---dry-run (optional)
-Simulates the uninstall process without making changes:
-Scans filesystem
-Lists detected files
-Calculates total size
-Prompts for confirmation without moving anything
-
-Examples
-
-Dry Run (Safe Mode)
+Command Flags
+Flag	Argument	Description
+-p	"Application Name"	Required. Specifies the target application. Wrap in quotes if the name contains spaces. The engine will automatically evaluate multiple name variations.
+--dry-run	None	Optional. Simulates the removal. It scans the filesystem, calculates the disk footprint, and stops at the prompt without moving any files.
+📖 Examples
+1. Previewing Leftovers (Dry-Run Mode)
+Bash
 ./AppCleaner.sh -p "Mullvad Browser" --dry-run
-
-Example output:
-```bash
+Console Output:
+Plaintext
 Searching for application: Mullvad Browser
 Found application:
   /Applications/Mullvad Browser.app
@@ -70,45 +53,31 @@ Scanning filesystem...
 Items found: 5
 =========================================
 
-114M  /Applications/Mullvad Browser.app
-12K   /Users/username/Library/Application Support/Mullvad Browser
-4.0K  /Users/username/Library/Preferences/net.mullvad.browser.plist
-512K  /Users/username/Library/Caches/MullvadBrowser
-8.0K  /Users/username/Library/Logs/Mullvad Browser
+114M       /Applications/Mullvad Browser.app
+12K        /Users/username/Library/Application Support/Mullvad Browser
+4.0K       /Users/username/Library/Preferences/net.mullvad.browser.plist
+512K       /Users/username/Library/Caches/MullvadBrowser
+8.0K       /Users/username/Library/Logs/Mullvad Browser
 
 Approximate total size: 114.53 MB
 
-Proceed with deletion? [y/N]
-```
-
-Full Uninstall
+Proceed with deletion? [y/N] 
+2. Performing a Complete Uninstall
+Bash
 ./AppCleaner.sh -p "Mullvad Browser"
-After confirmation (y), all detected files are safely moved to the Trash.
-
-Targeted Scan Locations
-The script searches both user and system-level locations:
-```bash
-/Applications
-~/Applications
-~/Library/Application Support
-~/Library/Caches
-~/Library/Preferences
-~/Library/Logs
-~/Library/Containers
+💡 Note: After reviewing the detected assets, type y or yes at the prompt. All tracked resources will be immediately moved to your Trash.
+📂 Target Scan Locations
+The engine performs targeted, depth-limited sweeps across both User-level (~/) and System-level (/) asset frameworks:
+/Applications & ~/Applications (.app bundles)
+~/Library/Application Support & /Library/Application Support
+~/Library/Caches & /Library/Preferences
+~/Library/Logs & /Library/Logs
+~/Library/Containers (App Sandboxes)
 ~/Library/Saved Application State
-/Library/Application Support
-/Library/LaunchAgents
-/Library/LaunchDaemons
-```
-
-WebKit and HTTP storage directories
-Safety Features
-Trash-based removal
-Instead of permanent deletion, files are moved to:
-~/.Trash/
-This allows easy recovery if something is removed accidentally.
-Confirmation prompt
-Before any destructive action:
-Full list of targets is displayed
-Total disk usage is calculated
-User must explicitly confirm with y
+~/Library/WebKit & ~/Library/HTTPStorages
+~/Library/Group Containers
+/Library/LaunchAgents & /Library/LaunchDaemons
+/Library/PrivilegedHelperTools
+🔒 Safety Controls
+Reversible Trashing: Because files are relocated to ~/.Trash/ via mv, any accidental flags can be instantly restored using the native macOS "Put Back" feature in the Trash bin.
+Explicit Confirmation Guardrails: Destructive execution paths are entirely blocked until the script prints the exact file manifest, totals the collective disk space usage, and receives an explicit y/yes confirmation from the user.
