@@ -59,6 +59,7 @@ Dry Run (Safe Mode)
 ./AppCleaner.sh -p "Mullvad Browser" --dry-run
 
 Example output:
+```bash
 Searching for application: Mullvad Browser
 Found application:
   /Applications/Mullvad Browser.app
@@ -78,6 +79,7 @@ Items found: 5
 Approximate total size: 114.53 MB
 
 Proceed with deletion? [y/N]
+```
 
 Full Uninstall
 ./AppCleaner.sh -p "Mullvad Browser"
